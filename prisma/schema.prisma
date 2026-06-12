@@ -1,0 +1,49 @@
+// banqdrop — the bucket ledger (the moat). DB is accounting only:
+// it never holds keys and never moves funds. Core invariant:
+//   sum(bucket.amount) == on-chain USDC balance   (preserved on every path)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id // auth/rails user id
+  walletAddress String    @unique
+  chain         String    @default("polygon")
+  email         String?   @unique
+  kycStatus     String    @default("none") // none | pending | approved | rejected
+  buckets       Bucket[]
+  deposits      Deposit[]
+  createdAt     DateTime  @default(now())
+}
+
+model Bucket {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String // user-editable label (free-text, off-chain metadata)
+  color      String
+  pct        Int // share of inbound; per-user buckets must sum to 100
+  amount     Decimal  @default(0) @db.Decimal(18, 2) // envelope balance (cents precision)
+  isSpending Boolean  @default(false) // ROLE flag: "ready to spend" + card default. Decoupled from name.
+  sortOrder  Int
+
+  @@index([userId])
+}
+
+model Deposit {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  txHash    String   @unique // dedupe key (holds unique event id; onchain = txHash:logIndex)
+  amountUsd Decimal  @db.Decimal(18, 2)
+  source    String // "oms" | "onchain" | "moonpay" | "bridge" | "mock"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
