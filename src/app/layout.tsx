@@ -1,10 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import PwaClient from "./pwa-client";
 
 export const metadata: Metadata = {
   title: "banqdrop",
   description: "An envelope-native stablecoin account. Money that lands splits itself.",
-  // Manifest + service worker wired in Phase 8 (PWA).
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "banqdrop" },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -18,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <PwaClient />
         <div className="mx-auto min-h-screen w-full max-w-md">{children}</div>
       </body>
     </html>
