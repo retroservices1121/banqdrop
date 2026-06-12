@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/db";
 import { allocateByPct } from "./allocate";
 import { centsToDecimal, dollarsToCents } from "@/lib/money";
+import { rails } from "@/rails/factory";
 import type { DepositEvent } from "@/rails/types";
 
 export interface CreditResult {
@@ -75,4 +76,19 @@ export async function creditDeposit(evt: DepositEvent): Promise<CreditResult> {
       addedCents: alloc.get(b.id) ?? 0,
     })),
   };
+}
+
+/** The provider-agnostic deposit entrypoint. Verifies + normalizes a raw webhook
+ *  via the rails contract, then credits each event idempotently. The HTTP webhook
+ *  route and the dev funding simulator both funnel through here — one credit path. */
+export async function ingestWebhook(
+  rawBody: string,
+  headers: Record<string, string>
+): Promise<CreditResult[]> {
+  const events = await rails.parseDepositWebhook(rawBody, headers);
+  const results: CreditResult[] = [];
+  for (const evt of events) {
+    results.push(await creditDeposit(evt));
+  }
+  return results;
 }
