@@ -27,6 +27,14 @@ interface DepositDTO {
   source: string;
   createdAt: string;
 }
+interface CardDTO {
+  last4: string;
+  brand: string;
+  network: string;
+  currency: string;
+  status: string;
+  provider: string;
+}
 type FundingInit =
   | { kind: "widget"; url: string }
   | { kind: "account"; accountNumber: string; routingNumber: string }
@@ -286,14 +294,60 @@ function AddMoney({ flash }: { flash: (m: string) => void }) {
 }
 
 function CardView({ me, spending }: { me: MeDTO; spending: BucketDTO }) {
+  const [card, setCard] = useState<CardDTO | null | undefined>(undefined); // undefined = loading
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/card")
+      .then((r) => (r.ok ? r.json() : { card: null }))
+      .then((d) => setCard(d.card));
+  }, []);
+
+  async function activate() {
+    setBusy(true);
+    try {
+      const { card } = await api<{ card: CardDTO }>("/api/card/issue", {});
+      setCard(card);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function toggleFreeze() {
+    if (!card) return;
+    setBusy(true);
+    try {
+      const { card: c } = await api<{ card: CardDTO }>("/api/card/freeze", {
+        frozen: card.status !== "frozen",
+      });
+      setCard(c);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const frozen = card?.status === "frozen";
+
   return (
     <>
       <section
         className="relative overflow-hidden rounded-3xl p-6 text-white shadow-lg"
         style={{ background: `linear-gradient(135deg, ${spending?.color}, #0d0f1a)` }}
       >
-        <div className="text-xs uppercase tracking-widest text-white/70">banqdrop card</div>
-        <div className="mt-8 font-mono text-lg tracking-widest">•••• •••• •••• 4242</div>
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-widest text-white/70">banqdrop card</div>
+          {card && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                frozen ? "bg-white/20 text-white/80" : "bg-emerald-400/30 text-emerald-100"
+              }`}
+            >
+              {frozen ? "frozen" : "active"}
+            </span>
+          )}
+        </div>
+        <div className="mt-8 font-mono text-lg tracking-widest">
+          •••• •••• •••• {card?.last4 ?? "————"}
+        </div>
         <div className="mt-4 flex items-end justify-between">
           <div>
             <div className="text-[10px] uppercase text-white/60">Spends from</div>
@@ -304,7 +358,32 @@ function CardView({ me, spending }: { me: MeDTO; spending: BucketDTO }) {
             <div className="font-semibold tabular-nums">{usd(spending?.amountUsd ?? 0)}</div>
           </div>
         </div>
+        {card === null && (
+          <button
+            onClick={activate}
+            disabled={busy}
+            className="mt-5 w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-ink disabled:opacity-50"
+          >
+            {busy ? "Issuing…" : "Activate card"}
+          </button>
+        )}
       </section>
+
+      {card && (
+        <div className="flex items-center justify-between rounded-2xl bg-white p-3 text-sm shadow-sm">
+          <span className="text-ink/60">
+            {card.brand} · {card.currency} on {card.network} · {card.provider}
+          </span>
+          <button
+            onClick={toggleFreeze}
+            disabled={busy}
+            className="rounded-lg bg-ink/10 px-3 py-1.5 font-medium disabled:opacity-50"
+          >
+            {frozen ? "Unfreeze" : "Freeze"}
+          </button>
+        </div>
+      )}
+
       <p className="text-center text-xs text-ink/45">
         The card draws from your spending bucket. Change it with the ★ on any bucket.
       </p>

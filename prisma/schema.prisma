@@ -19,7 +19,25 @@ model User {
   kycStatus     String    @default("none") // none | pending | approved | rejected
   buckets       Bucket[]
   deposits      Deposit[]
+  card          Card?
   createdAt     DateTime  @default(now())
+}
+
+// A card issued by a CardIssuer (mock now; Gnosis Pay later). The card draws from
+// the user's isSpending bucket. Vendor-agnostic: provider + provider refs are stored
+// so the issuer behind the CardIssuer contract can be swapped without schema change.
+model Card {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String // "mock" | "gnosispay"
+  providerCardId String
+  last4          String
+  brand          String   @default("visa")
+  network        String   @default("gnosis") // settlement network the card spends on
+  currency       String   @default("USDCe") // spendable token on that network
+  status         String   @default("active") // issued | active | frozen | cancelled
+  createdAt      DateTime @default(now())
 }
 
 model Bucket {
