@@ -6,6 +6,7 @@
 // Android/desktop get the real beforeinstallprompt button. Hidden once installed.
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface BIPEvent extends Event {
   prompt: () => Promise<void>;
@@ -24,6 +25,7 @@ function isIos() {
 }
 
 export default function PwaClient() {
+  const pathname = usePathname();
   const [installEvt, setInstallEvt] = useState<BIPEvent | null>(null);
   const [showIosHint, setShowIosHint] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -56,7 +58,8 @@ export default function PwaClient() {
     setNotif(await Notification.requestPermission());
   }
 
-  const showBar = !dismissed && (installEvt || showIosHint);
+  // The landing ("/") has its own in-page install CTA — don't double up with the banner.
+  const showBar = pathname !== "/" && !dismissed && (installEvt || showIosHint);
   if (!showBar) return null;
 
   return (
