@@ -11,15 +11,21 @@
 
 import type { CardIssuer } from "./types";
 import { mockIssuer } from "./mock/issuer";
+import { bridgeIssuer } from "./bridge/issuer";
 
 function selectIssuer(): CardIssuer {
   const choice = (process.env.CARD_ISSUER ?? "mock").toLowerCase();
   switch (choice) {
     case "mock":
       return mockIssuer;
+    case "bridge":
+      // Stripe Issuing + Bridge (US-capable, JIT from USDC). Scaffolded; activates once
+      // STRIPE_SECRET_KEY is set after onboarding. Bucket enforcement is in the
+      // /api/webhooks/card-auth real-time authorization route.
+      return bridgeIssuer;
     case "gnosispay":
       throw new Error(
-        "CARD_ISSUER=gnosispay but the Gnosis Pay issuer is not wired yet (pending chain + market decision)."
+        "CARD_ISSUER=gnosispay but the Gnosis Pay issuer is not wired yet (ex-US; pending chain + market decision)."
       );
     default:
       throw new Error(`Unknown CARD_ISSUER: ${choice}`);

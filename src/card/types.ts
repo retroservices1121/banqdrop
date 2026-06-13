@@ -25,7 +25,7 @@ export interface IssueOptions {
 }
 
 export interface CardIssuer {
-  id: "mock" | "gnosispay";
+  id: "mock" | "gnosispay" | "bridge";
   /** Network the card settles on + the token it spends. Surfaced for UI/wallet logic. */
   network: string;
   currency: string;

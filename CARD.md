@@ -29,27 +29,47 @@ Card issuance sits behind a **vendor-agnostic `CardIssuer` contract** (`src/card
   native USDC on Polygon/Base.
 - ❌ **US not supported** (as of 2026-06): EU/EEA (32), UK, Argentina, Brazil only. US "planned."
 
+## US cards — Stripe Issuing + Bridge (the path for US cardholders)
+
+Gnosis Pay can't issue to US cardholders (as of 2026-06). For the US the path is **Stripe Issuing
++ Bridge** (Bridge = Stripe's stablecoin arm; OCC conditional national-bank-charter approval Feb 2026):
+
+- **US cardholders supported** — Stripe's Bridge stablecoin-card docs show US-state cardholders + a
+  `customer_region_supports_cards` KYC gate.
+- **Non-custodial, JIT from USDC** — link the user's own wallet (`crypto_wallet[type]=standard`); at
+  authorization Bridge pulls USDC just-in-time via a prior on-chain approval. The card draws from the
+  SAME one balance the bucket ledger sits over — **no separate Safe/bridge** like Gnosis.
+- **Exact bucket attribution, built in** — Stripe Issuing's real-time authorization webhook lets us
+  approve/decline against the `isSpending` bucket and attribute each spend precisely.
+- **Access** — Stripe Issuing account + Bridge developer account + ~6–8 week onboarding (KYB/compliance).
+  Not permissionless, but no hard waitlist wall.
+- **Parallel alternatives** (same `CardIssuer` contract): **Rain** (NYC; USDC settlement; non-custodial;
+  Mastercard Principal Member) and **Baanx** (US-owned; powers MetaMask Card US). The custodial
+  program-manager route (Lithic/Marqeta + sponsor bank + off-ramp) is the heavy fallback that breaks
+  the non-custodial spend story.
+
 ## Decisions made
 
-1. **Real card uses the BRIDGE model, not a chain pivot.** Main balance + buckets stay on the
-   chosen settlement chain (Polygon via OMS, or Base via the fallback). When a card is funded,
-   the **`isSpending` bucket's funds bridge into a Gnosis Pay Safe** that the card spends from.
-   - Implication for the invariant: with a card live there are two on-chain balances (main
-     chain + Gnosis Safe). The invariant generalizes to
-     `sum(bucket.amount) == main-chain balance + Gnosis-Safe balance`, and reconciliation must
-     account for in-flight bridge transfers. Build this only when wiring the real issuer.
-2. **Stay on `CARD_ISSUER=mock` until the target market is confirmed.** Market is currently
-   "global / undecided"; Gnosis Pay can't issue to US cardholders yet, so don't commit real
-   issuance to a market that may be US-heavy.
-3. **Exact card-spend attribution waits for Gnosis Pay Partnership webhooks.** Until then,
-   outflows reconcile against the `isSpending` bucket (the existing v1 reconciliation rule).
+1. **US = Stripe Issuing + Bridge (`CARD_ISSUER=bridge`); ex-US = Gnosis Pay (`gnosispay`).** Both are
+   implementations of the same `CardIssuer` contract; pick per cardholder market.
+2. **US architecture is JIT-from-wallet — NOT a chain pivot or a Gnosis cross-chain Safe.** The card
+   spends JIT from the user's USDC on the settlement chain (`CARD_NETWORK`, default `base`). A spend
+   lowers the one real balance → attribute to `isSpending`. Invariant stays
+   `sum(bucket.amount) == on-chain USDC balance` (no second balance).
+   - The Gnosis cross-chain Safe model (two balances, bridge transfers) ONLY applies if we choose
+     `gnosispay` for an ex-US market.
+3. **Bucket enforcement is at the network edge** — the real-time authorization webhook
+   (`/api/webhooks/card-auth`) approves only if the auth fits the spending bucket and decrements that
+   bucket on capture. This replaces reconciliation-only attribution for card spends.
+4. **Stay on `CARD_ISSUER=mock`** until a provider is onboarded. The `bridge` issuer + auth webhook are
+   **scaffolded** (activate when `STRIPE_SECRET_KEY` is set); request shapes follow Stripe's Bridge docs
+   but are unverified against a live account.
 
-## When we go real (checklist, do NOT build yet)
+## When we go real (checklist)
 
-- [ ] Confirm cardholder market is Gnosis-Pay-supported (EU/UK/LATAM).
-- [ ] Implement `gnosispay` `CardIssuer` (SIWE→JWT auth, Safe creation, virtual-card issue,
-      freeze). Reports `network: "gnosis"`, `currency: "USDCe"` (or `EURe`).
-- [ ] Bridge step: move `isSpending` bucket funds main-chain → Gnosis Safe; reconcile both
-      balances + in-flight transfers into the invariant.
-- [ ] Upgrade to Partnership tier for card webhooks → exact per-spend bucket attribution +
-      sensitive card-detail display.
+- [ ] Apply: **Stripe Issuing + Bridge** (primary, US) and **Rain** (parallel). Onboard as Spredd Markets (KYB).
+- [ ] Confirm US cardholder eligibility + the supported `CARD_NETWORK` chain for USDC JIT.
+- [ ] Fill `STRIPE_SECRET_KEY`, `STRIPE_ISSUING_WEBHOOK_SECRET`, `BRIDGE_API_KEY`; finish the `bridge`
+      issuer (full cardholder KYC fields) and verify the real-time-authorization response contract.
+- [ ] Add a `CardSpend` record to dedupe captures (exact-once) + surface card spends in Activity.
+- [ ] (ex-US only) implement the `gnosispay` issuer + the Gnosis cross-chain Safe model.
