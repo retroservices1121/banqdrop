@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/user";
 import { cardIssuer } from "@/card/factory";
-import { cardDTO } from "../route";
+import { cardDTO } from "@/lib/serialize";
 
 // POST /api/card/issue — provision a card via the CardIssuer contract (idempotent:
 // one card per user). The card draws from the user's isSpending bucket.

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/user";
 import { cardIssuer } from "@/card/factory";
-import { cardDTO } from "../route";
+import { cardDTO } from "@/lib/serialize";
 
 const Body = z.object({ frozen: z.boolean() });
 

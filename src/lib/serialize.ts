@@ -1,6 +1,6 @@
 // DTOs for the client. Prisma Decimal -> plain numbers (cents + usd) so JSON is
 // lossless and the UI never does float math on money.
-import type { Bucket, Deposit, User } from "@prisma/client";
+import type { Bucket, Card, Deposit, User } from "@prisma/client";
 import { centsToDollars, decimalToCents } from "./money";
 
 export interface BucketDTO {
@@ -43,6 +43,26 @@ export function depositDTO(d: Deposit): DepositDTO {
     amountUsd: centsToDollars(decimalToCents(d.amountUsd)),
     source: d.source,
     createdAt: d.createdAt.toISOString(),
+  };
+}
+
+export interface CardDTO {
+  last4: string;
+  brand: string;
+  network: string;
+  currency: string;
+  status: string;
+  provider: string;
+}
+
+export function cardDTO(c: Card): CardDTO {
+  return {
+    last4: c.last4,
+    brand: c.brand,
+    network: c.network,
+    currency: c.currency,
+    status: c.status,
+    provider: c.provider,
   };
 }
 
