@@ -1,8 +1,8 @@
 "use client";
 
-// Marketing landing at "/". The actual app lives at /app. App previews below are
-// rendered with the SAME UI the live app shows (default buckets after a $1,000
-// deposit), so the landing is honest — not prototype mockups.
+// Marketing landing at "/". The actual app lives at /app. The phone mockups below
+// are REAL screenshots of the running app (captured by scripts/capture.mjs), so the
+// landing always reflects what /app actually does.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -11,17 +11,6 @@ interface BIPEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
-
-const usd = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
-
-// Default buckets after a $1,000 deposit — exactly what /app seeds + splits.
-const BUCKETS = [
-  { name: "Spending", color: "#22c55e", pct: 40, usd: 400, spending: true },
-  { name: "Bills", color: "#3b82f6", pct: 30, usd: 300, spending: false },
-  { name: "Savings", color: "#a855f7", pct: 20, usd: 200, spending: false },
-  { name: "Fun", color: "#f59e0b", pct: 10, usd: 100, spending: false },
-];
 
 const FEATURES = [
   { t: "Money splits itself", d: "Every deposit auto-divides across your named buckets by the percentages you set — no manual transfers, no penny drift." },
@@ -93,9 +82,7 @@ function Hero() {
         </p>
       </div>
       <div className="flex justify-center">
-        <PhoneFrame>
-          <BucketsScreen />
-        </PhoneFrame>
+        <Shot src="/screens/app-buckets.png" alt="Your buckets, with every deposit split automatically" />
       </div>
     </section>
   );
@@ -129,21 +116,24 @@ function Showcase() {
           The actual app
         </h2>
         <div className="mt-8 flex snap-x gap-8 overflow-x-auto pb-4 md:justify-center">
-          <div className="shrink-0 snap-center">
-            <PhoneFrame>
-              <SplitScreen />
-            </PhoneFrame>
-            <p className="mt-3 text-center text-sm text-ink/50">Set your split — must total 100%</p>
-          </div>
-          <div className="shrink-0 snap-center">
-            <PhoneFrame>
-              <CardScreen />
-            </PhoneFrame>
-            <p className="mt-3 text-center text-sm text-ink/50">A card that spends from one bucket</p>
-          </div>
+          <Caption text="Set your split — must total 100%">
+            <Shot src="/screens/app-split.png" alt="Split editor with percentage steppers" />
+          </Caption>
+          <Caption text="A card that spends from one bucket">
+            <Shot src="/screens/app-card.png" alt="Card view drawing from the spending bucket" />
+          </Caption>
         </div>
       </div>
     </section>
+  );
+}
+
+function Caption({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="shrink-0 snap-center">
+      {children}
+      <p className="mt-3 text-center text-sm text-ink/50">{text}</p>
+    </div>
   );
 }
 
@@ -217,7 +207,7 @@ function Footer() {
   );
 }
 
-/* ---------- App previews (rendered with the real UI) ---------- */
+/* ---------- Phone-framed real screenshots ---------- */
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -228,114 +218,12 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function BucketsScreen() {
-  const spending = BUCKETS.find((b) => b.spending)!;
+function Shot({ src, alt }: { src: string; alt: string }) {
   return (
-    <div className="flex h-full flex-col gap-3 p-4">
-      <div className="flex items-center justify-between pt-1">
-        <span className="text-sm font-semibold">banqdrop</span>
-        <span className="text-[10px] text-ink/40">you@email.com</span>
-      </div>
-      <div className="rounded-2xl bg-ink p-4 text-white">
-        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: spending.color }} />
-          Ready to spend · {spending.name}
-        </div>
-        <div className="mt-0.5 text-3xl font-semibold tracking-tight">{usd(spending.usd)}</div>
-        <div className="mt-3 flex items-center justify-between text-[10px] text-white/50">
-          <span>Live balance {usd(1000)}</span>
-          <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-300">✓ reconciled</span>
-        </div>
-      </div>
-      <div className="text-[11px] font-semibold text-ink/60">Buckets</div>
-      <ul className="space-y-1.5">
-        {BUCKETS.map((b) => (
-          <li key={b.name} className="flex items-center gap-2 rounded-xl bg-white p-2 shadow-sm">
-            <span className="h-7 w-7 shrink-0 rounded-full" style={{ background: b.color }} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">{b.name}</div>
-              <div className="text-[10px] text-ink/45">{b.pct}% of every deposit</div>
-            </div>
-            <div className="text-sm font-semibold tabular-nums">{usd(b.usd)}</div>
-            <span className={`text-base ${b.spending ? "text-amber-400" : "text-ink/20"}`}>
-              {b.spending ? "★" : "☆"}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function SplitScreen() {
-  return (
-    <div className="flex h-full flex-col gap-2 p-4">
-      <div className="flex items-center justify-between pt-1">
-        <span className="text-sm font-semibold">Edit split</span>
-        <span className="text-[11px] text-ink/50">Done</span>
-      </div>
-      <ul className="space-y-1.5">
-        {BUCKETS.map((b) => (
-          <li key={b.name} className="flex items-center gap-2 rounded-xl bg-white p-2 shadow-sm">
-            <span className="h-6 w-6 shrink-0 rounded-full" style={{ background: b.color }} />
-            <span className="flex-1 truncate text-sm font-medium">{b.name}</span>
-            <div className="flex items-center gap-1.5">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink/5 text-base">−</span>
-              <span className="w-9 text-center text-sm font-semibold tabular-nums">{b.pct}%</span>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink/5 text-base">+</span>
-            </div>
-          </li>
-        ))}
-      </ul>
-      <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-        <span>Total</span>
-        <span className="font-semibold tabular-nums">100% / 100%</span>
-      </div>
-      <div className="mt-auto rounded-xl bg-ink py-2.5 text-center text-sm font-medium text-white">
-        Save split
-      </div>
-    </div>
-  );
-}
-
-function CardScreen() {
-  const spending = BUCKETS.find((b) => b.spending)!;
-  return (
-    <div className="flex h-full flex-col gap-3 p-4">
-      <div className="pt-1 text-sm font-semibold">Card</div>
-      <div
-        className="rounded-2xl p-4 text-white shadow-lg"
-        style={{ background: `linear-gradient(135deg, ${spending.color}, #0d0f1a)` }}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-widest text-white/70">banqdrop card</span>
-          <span className="rounded-full bg-emerald-400/30 px-2 py-0.5 text-[9px] text-emerald-100">active</span>
-        </div>
-        <div className="mt-7 font-mono text-sm tracking-widest">•••• •••• •••• 9099</div>
-        <div className="mt-3 flex items-end justify-between">
-          <div>
-            <div className="text-[9px] uppercase text-white/60">Spends from</div>
-            <div className="text-sm font-semibold">{spending.name}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-[9px] uppercase text-white/60">Available</div>
-            <div className="text-sm font-semibold tabular-nums">{usd(spending.usd)}</div>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center justify-between rounded-xl bg-white p-2.5 text-[11px] shadow-sm">
-        <span className="text-ink/60">visa · USDC · mock</span>
-        <span className="rounded-lg bg-ink/10 px-2.5 py-1 font-medium">Freeze</span>
-      </div>
-      <div className="text-[11px] font-semibold text-ink/60">Activity</div>
-      <div className="flex items-center justify-between rounded-xl bg-white p-2.5 shadow-sm">
-        <div>
-          <div className="text-xs font-medium">Deposit · split across buckets</div>
-          <div className="text-[10px] text-ink/45">just now · mock</div>
-        </div>
-        <div className="text-sm font-semibold text-emerald-600">+{usd(1000)}</div>
-      </div>
-    </div>
+    <PhoneFrame>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className="h-full w-full object-cover object-top" />
+    </PhoneFrame>
   );
 }
 
