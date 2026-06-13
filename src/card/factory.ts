@@ -2,9 +2,12 @@
 //   CARD_ISSUER=mock       -> mock issuer (default; build + test with no vendor)
 //   CARD_ISSUER=gnosispay  -> Gnosis Pay (Safe on Gnosis Chain, USDCe; SIWE->JWT)
 //
-// The Gnosis Pay impl is intentionally NOT wired yet: it forces the settlement-chain
-// decision (the card spends from a Gnosis-Chain Safe, not Polygon/Base) and the target
-// market must support Gnosis Pay (not US, as of 2026-06). See the card contract notes.
+// DECISION (2026-06-12, see CARD.md): real card uses the BRIDGE model — main balance
+// stays on Polygon/Base; the isSpending bucket's funds bridge into a Gnosis Pay Safe
+// that the card spends from. Mock stays in place until the target market is confirmed
+// (Gnosis Pay is not available to US cardholders yet). The card's own network/currency
+// already live on IssuedCard, so the card settles on Gnosis while the main wallet does
+// not — no schema change needed when the gnosispay impl lands.
 
 import type { CardIssuer } from "./types";
 import { mockIssuer } from "./mock/issuer";

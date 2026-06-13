@@ -22,6 +22,10 @@ next-env.d.ts
 *.log
 .devserver.log
 .DS_Store
+
+# bulky local source/reference (kept on disk, not in the PWA repo)
+/banqdrop_mobi_media_code_package/
+/banqdrop_assets_for_mobi_media/
 *.pem
 npm-debug.log*
 .vercel
